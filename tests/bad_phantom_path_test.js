@@ -1,3 +1,5 @@
+'use strict';
+
 var phantom = require('../node-phantom-simple');
 var assert = require('assert');
 

@@ -1,6 +1,5 @@
 'use strict';
 
-
 var phantom = require('../node-phantom-simple')
     , assert = require('assert');
 
@@ -48,7 +47,9 @@ describe('page get/set methods', function() {
         })
         .then(function (newSettings) {
             assert.notEqual(this.settings.userAgent, newSettings.userAgent);
-            return this.ph.exit();
+        })
+        .finally(function() {
+            return this.ph.exit();            
         });
     });
 });

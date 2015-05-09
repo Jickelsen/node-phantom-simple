@@ -16,8 +16,7 @@
     "bluebird": "^2.9.25"
   },
   "devDependencies": {
-    "mocha": "^2.2.4",
-    "nodeunit": ""
+    "mocha": "^2.2.4"
   },
   "optionalDependencies": {},
   "engines": {

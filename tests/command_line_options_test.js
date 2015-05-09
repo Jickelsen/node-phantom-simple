@@ -1,3 +1,5 @@
+'use strict';
+
 var http = require('http')
     , url = require('url')
     , os = require('os')
@@ -70,13 +72,13 @@ describe('phantom command line options', function() {
             return page.open('http://localhost/testPhantomPagePushNotifications');
         })
         .then(function () {
-            return phantomInstance.exit();
-        })
-        .then(function () {
             if (os.platform() === 'darwin')
                 return console.log('Proxy doesn\'t work on OSX');
 
             assert.equal(usingProxy, true, "Check if using proxy");
+        })
+        .finally(function() {
+            return phantomInstance.exit();
         });
     });
 });

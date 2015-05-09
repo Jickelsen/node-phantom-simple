@@ -1,6 +1,5 @@
 'use strict';
 
-
 var phantom = require('../node-phantom-simple')
     , createServer = require('./utils/create_server')
     , assert = require('assert');
@@ -47,7 +46,7 @@ describe('page events', function() {
         .then(function (result) {
             assert.equal(result,'Hello Test');            
         })
-        .then(function() {
+        .finally(function() {
             return this.ph.exit();
         });
     });

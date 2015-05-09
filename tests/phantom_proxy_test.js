@@ -1,5 +1,6 @@
-var phantom = require('../node-phantom-simple');
+'use strict';
 
+var phantom = require('../node-phantom-simple');
 
 describe('phantom', function() {
     var ph;
