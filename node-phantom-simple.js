@@ -8,16 +8,16 @@ var spawnPhantom = require('./lib/spawn_phantom')
     , _utils = require('./lib/_utils')
     , callbackOrDummy = _utils.callbackOrDummy
     , unwrapArray = _utils.unwrapArray
-    , wrapArray = _utils.wrapArray;
+    , wrapArray = _utils.wrapArray
+    , Promise = require('bluebird');
 
 
-exports.create = function (callback, options) {
+exports.create = function (options) {
     options = options || {};
     options.bridge = options.bridge || (__dirname + '/bridge.js');
 
-    spawnPhantom(options, function (err, phantom, port) {
-        if (err) return callback(err);
-
+    return spawnPhantom(options)
+    .spread(function (phantom, port) {
         // console.log("Phantom spawned with web server on port: " + port);
 
         var pages = {};
@@ -25,7 +25,7 @@ exports.create = function (callback, options) {
         var poll_func = longPoll(phantom, port, pages, setup_new_page);
         var proxy = new PhantomProxy(phantom, request_queue, poll_func, setup_new_page);
 
-        callback(null, proxy);
+        return proxy;
 
 
         function setup_new_page(id) {

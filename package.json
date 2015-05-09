@@ -13,9 +13,11 @@
     "test": "./run_tests"
   },
   "dependencies": {
+    "bluebird": "^2.9.25"
   },
   "devDependencies": {
-    "nodeunit" : ""
+    "mocha": "^2.2.4",
+    "nodeunit": ""
   },
   "optionalDependencies": {},
   "engines": {
