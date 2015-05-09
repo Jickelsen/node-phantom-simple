@@ -1,10 +1,12 @@
-Node-phantom-simple
----------------
+Node-phantom-async
+------------------
 
 This is a bridge between [PhantomJs](http://phantomjs.org/) and
 [Node.js](http://nodejs.org/).
 
-This module is API compatible with node-phantom but doesn't rely on WebSockets
+This module is a fork from [node-phantom-simple](https://www.npmjs.com/package/node-phantom-simple) but all the methods of both phantom and page objects return promises instead of using callbacks. [Bluebird](https://github.com/petkaantonov/bluebird) library is used to support promises (even if you run node version that supports promises natively, Bluebird promises are subsctantially faster than native promises - see [here](http://programmers.stackexchange.com/questions/278778/why-are-native-es6-promises-slower-and-more-memory-intensive-than-bluebird)).
+
+This module has similar API to node-phantom but it doesn't rely on WebSockets
 or socket.io. In essence the communication between Node and Phantom has been
 made significantly simpler. It has the following advantages over node-phantom:
 
@@ -20,61 +22,69 @@ You will need to install PhantomJS first. The bridge assumes that the
 "phantomjs" binary is available in the PATH, or you will need to pass its path
 into the `phantom.create() method.
 
-For running the tests you will need [Expresso](http://visionmedia.github.com/expresso/).
+For running the tests you will need [mocha](http://mochajs.org/).
 The tests require PhantomJS 1.6 or newer to pass.
 
 Installing
 ----------
 
-    npm install node-phantom-simple
+    npm install node-phantom-async
 
 
 Usage
 -----
-You can use it exactly like you would use Node-Phantom, and the entire API of
-PhantomJS should work, with the exception that every method call takes a
-callback (always as the last parameter) instead of returning values.
+The entire API of PhantomJS should work, with the exception that every method call returns a promise instead of returning values.
 
 For example this is an adaptation of a
 [web scraping example](http://net.tutsplus.com/tutorials/javascript-ajax/web-scraping-with-node-js/) :
 
 ```javascript
-var phantom=require('node-phantom-simple');
-phantom.create(function(err,ph) {
-  return ph.createPage(function(err,page) {
-    return page.open("http://tilomitra.com/repository/screenscrape/ajax.html", function(err,status) {
-      console.log("opened site? ", status);
-      page.includeJs('http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js', function(err) {
-        //jQuery Loaded.
-        //Wait for a bit for AJAX content to load on the page. Here, we are waiting 5 seconds.
-        setTimeout(function() {
-          return page.evaluate(function() {
-            //Get what you want from the page using jQuery. A good way is to populate an object with all the jQuery commands that you need and then return the object.
-            var h2Arr = [],
-            pArr = [];
-            $('h2').each(function() {
-              h2Arr.push($(this).html());
-            });
-            $('p').each(function() {
-              pArr.push($(this).html());
-            });
+var phantom = require('node-phantom-async');
 
-            return {
-              h2: h2Arr,
-              p: pArr
-            };
-          }, function(err,result) {
-            console.log(result);
-            ph.exit();
-          });
-        }, 5000);
-      });
-	});
-  });
+phantom.create()
+.bind({})
+.then(function (ph) {
+    this.ph = ph;
+    return ph.createPage();
+})
+.then(function (page) {
+    this.page = page;
+    return page.open('http://tilomitra.com/repository/screenscrape/ajax.html');
+})
+.then(function (status) {
+    console.log('opened site?', status);
+    var jqUrl = 'http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js'
+    return this.page.includeJs(jqUrl);
+})
+.delay(5000) // Wait for AJAX content to load on the page.
+.then(function() {
+    // jQuery Loaded.
+    return this.page.evaluate(function() {
+        //Get what you want from the page using jQuery. A good way is to populate an object with all the jQuery commands that you need and then return the object.
+        var h2Arr = [],
+        pArr = [];
+        $('h2').each(function() {
+            h2Arr.push($(this).html());
+        });
+        $('p').each(function() {
+            pArr.push($(this).html());
+        });
+
+        return {
+          h2: h2Arr,
+          p: pArr
+        };
+    });
+})
+.then(function (result) {
+    console.log(result);
+})
+.finally(function() {
+    this.ph.exit();
 });
 ```
 
-### phantom.create(callback, options)
+### phantom.create(options)
 
 `options` is an optional object with options for how to start PhantomJS.
 `options.parameters` is an array of parameters that will be passed to PhantomJS
@@ -83,7 +93,7 @@ on the commandline.
 For example
 
 ```javascript
-phantom.create(callback, {parameters: {'ignore-ssl-errors': 'yes'}})
+phantom.create({parameters: {'ignore-ssl-errors': 'yes'}})
 ```
 
 will start phantom as:
@@ -98,7 +108,7 @@ be used together with the [PhantomJS package](https://npmjs.org/package/phantomj
 like so:
 
 ```javascript
-phantom.create(callback, {phantomPath: require('phantomjs').path})
+phantom.create({phantomPath: require('phantomjs').path})
 ```
 
 You can also have a look at the test folder to see some examples of using the
@@ -112,7 +122,7 @@ warnings generated by qt and phantomjs.
 On Mavericks, you can use: `{ignoreErrorPattern: /CoreText/}` to suppress some common annoying font-related warnings.
 
 WebPage Callbacks
------
+-----------------
 
 All of the WebPage callbacks have been implemented including `onCallback`, and
 are set the same way as with the core phantomjs library:
@@ -126,25 +136,28 @@ page.onResourceReceived = function(response) {
 This includes the `onPageCreated` callback which receives a new `page` object.
 
 Properties
------
+----------
 
 Properties on the [WebPage](https://github.com/ariya/phantomjs/wiki/API-Reference-WebPage)
 and [Phantom](https://github.com/ariya/phantomjs/wiki/API-Reference-phantom)
 objects are accessed via the `get()/set()` method calls:
 
 ```javascript
-page.get('content', function (err,html) {
-  console.log("Page HTML is: " + html);
+page.get('content')
+.then(function (html) {
+    console.log("Page HTML is: " + html);
 })
-page.set('zoomfactor', 0.25, function () {
-  page.render('capture.png');
+
+page.set('zoomfactor', 0.25)
+.then(function () {
+    page.render('capture.png');
 })
 ```
 
 License - MIT
------
+-------------
 
-Copyright (c) 2013 Matt Sergeant
+Copyright (c) 2013 Matt Sergeant & Evgeny Poberezkin
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -163,10 +176,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-
-
-
-Other
------
-Made by Matt Sergeant for Hubdoc Inc.
-

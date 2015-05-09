@@ -1,16 +1,16 @@
 {
-  "author": "Matt Sergeant (matt@hubdoc.com)",
-  "name": "node-phantom-simple",
+  "author": "Matt Sergeant / Evgeny Poberezkin",
+  "name": "node-phantom-async",
   "description": "Simple and reliable bridge between Node.js and PhantomJS",
-  "version": "1.2.0",
-  "homepage": "https://github.com/baudehlo/node-phantom-simple",
+  "version": "1.2.1",
+  "homepage": "https://github.com/epoberezkin/node-phantom-simple/tree/async",
   "repository": {
     "type": "git",
-    "url": "git://github.com/baudehlo/node-phantom-simple.git"
+    "url": "git://github.com/epoberezkin/node-phantom-simple.git"
   },
   "main": "node-phantom-simple.js",
   "scripts": {
-    "test": "./run_tests"
+    "test": "./node_modules/.bin/mocha tests"
   },
   "dependencies": {
     "bluebird": "^2.9.25"

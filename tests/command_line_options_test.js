@@ -3,7 +3,7 @@
 var http = require('http')
     , url = require('url')
     , os = require('os')
-    , phantom = require('../node-phantom-simple')
+    , phantom = require('../node-phantom-async')
     , Promise = require('bluebird')
     , assert = require('assert');
 

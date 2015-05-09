@@ -1,6 +1,6 @@
 'use strict';
 
-var phantom = require('../node-phantom-simple');
+var phantom = require('../node-phantom-async');
 
 describe('phantom', function() {
     var ph;

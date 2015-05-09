@@ -1,6 +1,6 @@
 'use strict';
 
-var phantom = require('../node-phantom-simple')
+var phantom = require('../node-phantom-async')
     , createServer = require('./utils/create_server')
     , assert = require('assert');
 

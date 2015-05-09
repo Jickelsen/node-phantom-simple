@@ -1,7 +1,7 @@
 'use strict';
 
 var http = require('http')
-    , phantom = require('../node-phantom-simple')
+    , phantom = require('../node-phantom-async')
     , assert = require('assert');
 
 
