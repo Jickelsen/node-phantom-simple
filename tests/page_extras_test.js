@@ -67,7 +67,7 @@ describe('page extras', function() {
     });
 
 
-    describe.only('waitForSelector method', function() {
+    describe('waitForSelector method', function() {
         it('should resolve if selector exists', function() {
             return page.waitForSelector('#button1');
         });
@@ -80,8 +80,31 @@ describe('page extras', function() {
             return isRejected(page.waitForSelector('#button2', 400));
         });
 
-        it('should reject if selector does not exist', function() {
+        it('should reject if selector never appears', function() {
             return isRejected(page.waitForSelector('#button3', 1000));
+        });
+    });
+
+
+    describe('checkSelector method', function() {
+        it('should resolve if selector exists', function() {
+            return page.checkSelector('#button1');
+        });
+
+        it('should reject if selector does not exist and no retryOptions passed', function() {
+            return isRejected(page.checkSelector('#button2'));
+        });
+
+        it('should resolve if selector appears before timeout expires', function() {
+            return page.checkSelector('#button2', { timeout: 1000, interval: 50 });
+        });
+
+        it('should reject if selector appears after timeout expires', function() {
+            return isRejected(page.checkSelector('#button2', { timeout: 400, interval: 50 }));
+        });
+
+        it('should reject if selector never appears', function() {
+            return isRejected(page.checkSelector('#button3', { timeout: 1000, interval: 50 }));
         });
     });
 
