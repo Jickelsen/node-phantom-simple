@@ -146,7 +146,7 @@ The default button is left, there is no need to specify button to pass `retryOpt
 
 `clickSelector(selector [, button='left'] [, retryOptions])`
 
-Sugar for `sendMouseEventToSelector`
+`clickSelector` is sugar for `sendMouseEventToSelector`
 
 
 If `retryOptions` are passed the methods will try to check the existence of selector multiple times which can be useful if the page is dynamically updated.

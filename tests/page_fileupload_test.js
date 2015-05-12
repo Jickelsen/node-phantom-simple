@@ -5,7 +5,7 @@ var phantom = require('../node-phantom-async')
     , assert = require('assert');
 
 
-describe('page callbacks', function() {
+describe('page.uploadFile', function() {
     var server, gotFile;
 
     before(function(done) {

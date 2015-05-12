@@ -5,10 +5,10 @@ var http = require('http')
     , assert = require('assert');
 
 
-describe('page', function() {
-    var server;
+describe('page methods', function() {
+    var server, ph, page;
 
-    beforeEach(function (done) {
+    before(function (done) {
         server = http.createServer(function (request,response) {
             if (request.url==='/test.js') {
                 response.writeHead(200, {"Content-Type": "text/javascript"});
@@ -18,149 +18,137 @@ describe('page', function() {
                 response.writeHead(200,{"Content-Type": "text/html"});
                 response.end('<html><head></head><body><h1>Hello World</h1></body></html>');
             }
-        }).listen(done);
-    });
-
-    afterEach(function (done) {
-        server.close(done);
-    });
-
-
-    describe('page methods', function() {
-        var ph, page;
-
-        beforeEach(function() {
-            return phantom.create({ignoreErrorPattern: /CoreText performance note/})
+        }).listen(function (err) {
+            if (err) return done(err);
+            phantom.create({ignoreErrorPattern: /CoreText performance note/})
             .then(function (_ph) {
                 ph = _ph;
-                return ph.createPage();
+                done();
             })
-            .then(function (_page) {
-                page = _page;
-            });
+            .catch(done);
         });
-        
+    });
 
-        afterEach(function() {
-            return ph.exit();
+    beforeEach(function() {
+        return ph.createPage()
+        .then(function (_page) {
+            page = _page;
+        });
+    });
+
+    afterEach(function() {
+        return page.close();
+    });
+
+    after(function (done) {
+        ph.exit()
+        .finally(function() {
+            server.close(done);
+        });
+    });
+
+
+    it('should open page', function() {
+        return page.open('http://localhost:' + server.address().port)
+        .then(function (status) {
+            assert.equal(status,'success');
+        });
+    })
+
+
+    it('should evaluate JS in the page', function() {
+        return page.open('http://localhost:' + server.address().port)
+        .then(function (status) {
+            assert.equal(status, 'success');
+            return page.evaluate(function (tag) {
+                return { text: document.getElementsByTagName(tag)[0].innerText };
+            }, 'h1');
         })
+        .then(function (result) {
+            assert.equal(result.text, 'Hello World');
+        });
+    });
 
 
-        it('should open page', function() {
-            return page.open('http://localhost:' + server.address().port)
-            .then(function (status) {
-                assert.equal(status,'success');
+    it('should include JS in the page', function() {
+        return page.open('http://localhost:' + server.address().port)
+        .then(function (status) {
+            assert.equal(status, 'success');
+            return page.includeJs('http://localhost:' + server.address().port + '/test.js');
+        })
+        .then(function() {
+            return page.evaluate(function (tag) {
+                return [document.getElementsByTagName(tag)[0].innerText, document.getElementsByTagName('script').length];
+            }, 'h1');
+        })
+        .then(function (result) {
+            assert.equal(result[0], 'Hello Test', 'Script was executed');
+            assert.equal(result[1], 1, 'Added a new script tag');
+        });
+    });
+
+
+    it('should inject JS in the page', function() {
+        return page.open('http://localhost:' + server.address().port)
+        .then(function (status) {
+            assert.equal(status, 'success');
+            return page.injectJs('tests/files/modifytest.js');
+        })
+        .then(function() {
+            return page.evaluate(function(){
+                return [document.getElementsByTagName('h1')[0].innerText,document.getElementsByTagName('script').length];
             });
         })
-
-
-        it('should release page', function() {
-            return page.close();
+        .then(function (result) {
+            assert.equal(result[0], 'Hello Test');   //the script should have been executed
+            assert.equal(result[1], 0);              //it should not have added a new script-tag (see: https://groups.google.com/forum/?fromgroups#!topic/phantomjs/G4xcnSLrMw8)
         });
+    });
 
 
-        it('should release page after opening', function() {
-            return page.open('http://localhost:' + server.address().port)
-            .then(function () {
-                return page.close();
-            });
-        });
+    describe('render methods', function() {
+        var testFilename = __dirname+'/files/testrender.png'
+            , verifyFilename = __dirname+'/files/verifyrender.png'
+            , fs = require('fs')
+            , crypto = require('crypto');
 
-
-        it('should evaluate JS in the page', function() {
+        it('should render page to file', function() {
             return page.open('http://localhost:' + server.address().port)
             .then(function (status) {
                 assert.equal(status, 'success');
-                return page.evaluate(function (tag) {
-                    return { text: document.getElementsByTagName(tag)[0].innerText };
-                }, 'h1');
-            })
-            .then(function (result) {
-                assert.equal(result.text, 'Hello World');
-            });
-        });
-
-
-        it('should include JS in the page', function() {
-            return page.open('http://localhost:' + server.address().port)
-            .then(function (status) {
-                assert.equal(status, 'success');
-                return page.includeJs('http://localhost:' + server.address().port + '/test.js');
+                return page.render(testFilename);
             })
             .then(function() {
-                return page.evaluate(function (tag) {
-                    return [document.getElementsByTagName(tag)[0].innerText, document.getElementsByTagName('script').length];
-                }, 'h1');
-            })
-            .then(function (result) {
-                assert.equal(result[0], 'Hello Test', 'Script was executed');
-                assert.equal(result[1], 1, 'Added a new script tag');
+                assert.equal(fileHash(testFilename), fileHash(verifyFilename));
+                fs.unlinkSync(testFilename);    //clean up the testfile
             });
         });
 
 
-        it('should inject JS in the page', function() {
+        it('should render page to Buffer in base64 encoding', function() {
             return page.open('http://localhost:' + server.address().port)
             .then(function (status) {
                 assert.equal(status, 'success');
-                return page.injectJs('tests/files/modifytest.js');
+                return page.renderBase64('png');
             })
-            .then(function() {
-                return page.evaluate(function(){
-                    return [document.getElementsByTagName('h1')[0].innerText,document.getElementsByTagName('script').length];
-                });
+            .then(function (imagedata) {
+                assert.equal(bufferHash(new Buffer(imagedata, 'base64')), fileHash(verifyFilename));
             })
-            .then(function (result) {
-                assert.equal(result[0], 'Hello Test');   //the script should have been executed
-                assert.equal(result[1], 0);              //it should not have added a new script-tag (see: https://groups.google.com/forum/?fromgroups#!topic/phantomjs/G4xcnSLrMw8)
-            });
-        });
+        });            
 
 
-        describe('render methods', function() {
-            var testFilename = __dirname+'/files/testrender.png'
-                , verifyFilename = __dirname+'/files/verifyrender.png'
-                , fs = require('fs')
-                , crypto = require('crypto');
-
-            it('should render page to file', function() {
-                return page.open('http://localhost:' + server.address().port)
-                .then(function (status) {
-                    assert.equal(status, 'success');
-                    return page.render(testFilename);
-                })
-                .then(function() {
-                    assert.equal(fileHash(testFilename), fileHash(verifyFilename));
-                    fs.unlinkSync(testFilename);    //clean up the testfile
-                });
-            });
+        function fileHash (filename) {
+            var shasum = crypto.createHash('sha256');
+            var f = fs.readFileSync(filename);
+            shasum.update(f);
+            return shasum.digest('hex');
+        }
 
 
-            it('should render page to Buffer in base64 encoding', function() {
-                return page.open('http://localhost:' + server.address().port)
-                .then(function (status) {
-                    assert.equal(status, 'success');
-                    return page.renderBase64('png');
-                })
-                .then(function (imagedata) {
-                    assert.equal(bufferHash(new Buffer(imagedata, 'base64')), fileHash(verifyFilename));
-                })
-            });            
-
-
-            function fileHash (filename) {
-                var shasum = crypto.createHash('sha256');
-                var f = fs.readFileSync(filename);
-                shasum.update(f);
-                return shasum.digest('hex');
-            }
-
-
-            function bufferHash(buffer){
-                var shasum = crypto.createHash('sha256');
-                shasum.update(buffer);
-                return shasum.digest('hex');    
-            }
-        });
+        function bufferHash(buffer){
+            var shasum = crypto.createHash('sha256');
+            shasum.update(buffer);
+            return shasum.digest('hex');    
+        }
     });
 });
