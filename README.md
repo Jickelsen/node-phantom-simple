@@ -140,6 +140,10 @@ In addition to methods from phantomjs api there are several convenience methods 
 
 Returns the result of `el.getBoundingClientRect()` where `el` is the first element matching the selector. 
 
+`getSelectorVisiblePoint(selector [, retryOptions])`
+
+Returns a visible point inside element matching selector. Tests up to 9 points.
+
 `sendMouseEventToSelector(selector, mouseEventType, [, button='left'] [, retryOptions])`
 
 The default button is left, there is no need to specify button to pass `retryOptions` - if the last parameter is an object it will be used for retrying.
