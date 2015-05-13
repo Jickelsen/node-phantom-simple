@@ -153,7 +153,7 @@ If `retryOptions` are passed the methods will try to check the existence of sele
 
 `retryOptions` support `interval`, `backoff`, `max_interval`, `timeout` and `max_tries` properties. Check [bluebird-retry](https://github.com/jut-io/bluebird-retry) library that is used for retrying for details on those options. 
 
-If `retryOptions` are not passed checked is performed only once and the returned promises is rejected if the selector matches no elements on the page when it is checked.
+If `retryOptions` are not passed check is performed only once and the returned promise is rejected if the selector matches no elements on the page when it is checked.
 
 
 WebPage Callbacks

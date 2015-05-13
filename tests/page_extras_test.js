@@ -11,7 +11,7 @@ describe('page extras', function() {
 
     before(function() {
         return createServer('<html><head></head>\
-<body><h1>Hello World</h1><div id="button1" class="button1">Button 1</div></body></html>')
+<body style="position:relative"><h1>Hello World</h1><div id="button1" class="button1">Button 1</div></body></html>')
         .then(function(_server) {
             server = _server;
             return phantom.create({ignoreErrorPattern: /CoreText performance note/});
@@ -210,17 +210,38 @@ describe('page extras', function() {
             return isRejected(page.clickSelector('#button3', { timeout: 1000, interval: 50 }))
             .then(assertNoMessages);
         });
+
+        it('should reject if selector is covered', function() {
+            var promise = page.checkSelector('#button2', { timeout: 1000, interval: 50 })
+            .then(function() {
+                return page.evaluate(function() {
+                    var el = document.createElement('div');
+                    body.appendChild(el);
+                    el.setAttribute('style', 'position:absolute;top:0;left:0;min-width:100%;min-height:100%;z-index:100');
+                    // covers button 1 now
+                });
+            })
+            .then(function() {
+                return page.clickSelector('#button1')
+                .then(function () {
+                    throw new Error('selector visible');
+                });
+            });
+
+            return isRejected(promise);
+        });
     });
 
 
     function isRejected(promise) {
         return promise
-        .then(function() {
-            throw new Error('promise is resolved')
-        })
-        .catch(function(err) {
-            assert(!!err);
-        });
+        .then(
+            function() {
+                throw new Error('promise is resolved')
+            },
+            function(err) {
+                assert(!!err);
+            });
     }
 
 
