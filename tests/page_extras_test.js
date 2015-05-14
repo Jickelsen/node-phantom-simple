@@ -268,6 +268,19 @@ describe('page extras', function() {
             });
         });
 
+        it('should fail to submit form if element is not form', function() {
+            return page.submitForm('#my_form input', { name: 'test' })
+            .delay(100)
+            .then(function (submitted) {
+                throw new Error('promise resolved');
+            })
+            .catch(function (err) {
+                assert(!!err);
+                // console.log(err);
+                assert.deepEqual(messages, []);
+            });
+        });
+
         it('should fail to submit form if some field is not in form', function() {
             return page.submitForm('#my_form', { name: 'test', extra: 'not in form' })
             .delay(100)
