@@ -152,6 +152,9 @@ The default button is left, there is no need to specify button to pass `retryOpt
 
 `clickSelector` is sugar for `sendMouseEventToSelector`
 
+`submitForm(formSelector, data [, retryOptions])`
+
+`data` is an object with keys matching name attributes of input elements.
 
 If `retryOptions` are passed the methods will try to check the existence of selector multiple times which can be useful if the page is dynamically updated.
 

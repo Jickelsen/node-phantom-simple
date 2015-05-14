@@ -1,7 +1,7 @@
 'use strict';
 
 var phantom = require('../node-phantom-async')
-    , createServer = require('./utils/create_server')
+    , http = require('http')
     , assert = require('assert');
 
 
@@ -9,16 +9,32 @@ describe('page extras', function() {
     var server, ph, page, messages;
 
 
-    before(function() {
-        return createServer('<html><head></head>\
-<body style="position:relative"><h1>Hello World</h1><div id="button1" class="button1">Button 1</div></body></html>')
-        .then(function(_server) {
-            server = _server;
-            return phantom.create({ignoreErrorPattern: /CoreText performance note/});
+    before(function (done) {
+        server = http.createServer(function (req, res) {
+            res.writeHead(200, {'Content-Type': 'text/html'});
+            if (req.url==='/login') {
+                var body = '';
+                req.on('data', function (data) { body += data; });
+                req.on('end', function () { messages.push({ reqBody: body }); });
+                res.end('post received');
+            } else {
+                res.end('<html><head></head>\
+<body style="position:relative"><h1>Hello World</h1>\
+<div id="button1" class="button1">Button 1</div>\
+<form id="my_form" method="post" action="/login">\
+<input type="text" name="name"><input type="password" name="password">\
+<div name="not_input"></div></form>\
+</body></html>');
+            }
+        }).listen(function (err) {
+            if (err) return done(err);
+            return phantom.create({ignoreErrorPattern: /CoreText performance note/})
+            .then(function (_ph) {
+                ph = _ph;
+                done();
+            })
+            .catch(done);
         })
-        .then(function (_ph) {
-            ph = _ph;
-        });
     });
 
 
@@ -229,6 +245,53 @@ describe('page extras', function() {
             });
 
             return isRejected(promise);
+        });
+    });
+
+
+    describe('submitForm method', function() {
+        it('should submit form', function() {
+            return page.submitForm('#my_form', { name: 'test', password: '123' })
+            .delay(100)
+            .then(function (submitted) {
+                assert(submitted);
+                assert.deepEqual(messages, [ { reqBody: 'name=test&password=123' }]);
+            });
+        });
+
+        it('should submit form if not fields are passed', function() {
+            return page.submitForm('#my_form', { name: 'test' })
+            .delay(100)
+            .then(function (submitted) {
+                assert(submitted);
+                assert.deepEqual(messages, [ { reqBody: 'name=test&password=' }]);
+            });
+        });
+
+        it('should fail to submit form if some field is not in form', function() {
+            return page.submitForm('#my_form', { name: 'test', extra: 'not in form' })
+            .delay(100)
+            .then(function (submitted) {
+                throw new Error('promise resolved');
+            })
+            .catch(function (err) {
+                assert(!!err);
+                // console.log(err);
+                assert.deepEqual(messages, []);
+            });
+        });
+
+        it('should fail to submit form if element present but not input', function() {
+            return page.submitForm('#my_form', { name: 'test', not_input: 'test' })
+            .delay(100)
+            .then(function (submitted) {
+                throw new Error('promise resolved');
+            })
+            .catch(function (err) {
+                assert(!!err);
+                // console.log(err);
+                assert.deepEqual(messages, []);
+            });
         });
     });
 
