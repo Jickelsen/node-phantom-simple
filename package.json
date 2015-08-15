@@ -2,7 +2,7 @@
   "author": "Matt Sergeant / Evgeny Poberezkin",
   "name": "node-phantom-async",
   "description": "Simple and reliable bridge between Node.js and PhantomJS",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "homepage": "https://github.com/epoberezkin/node-phantom-simple/tree/async",
   "repository": {
     "type": "git",
